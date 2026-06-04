@@ -12,53 +12,42 @@ import sys
 # *******************************************
 
 # page representa la ventana principal de la app
-def main(page1: ft.Page):
+def main(page: ft.Page):
+    page.title = "Login"
+    admin = ft.TextField(label="Usuario", width=200)
+    password = ft.TextField(label="contraseña", width=200, password=True, required=True)
     
-    page1.title = "Inicio de sesión"
-
-    # Color de fondo de la ventana
-    page1.bgcolor = ft.Colors.WHITE_100
-
-    # Centrar contenido horizontalmente
-    page1.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-
-    # Centrar contenido verticalmente
-    page1.vertical_alignment = ft.MainAxisAlignment.CENTER
-    
-    #Creacion del primer campo de texto
-    username = ft.TextField(Label="Usuario", width=250, autofocus=True)
-    password = ft.TextField(Label="Contraseña", width=250, password=True)
-    resultado = ft.Text()
-    
-    def iniciar_sesion(e):
-        if username.value == "admin" and password.value == "1234":
-            resultado.value = "Inicio de sesion exitoso"
-            resultado.color = "green"
-            page1.update()
-            page1.clean()
-            main(page1)
+    def login(e):
+        if admin.value == "admin" and password.value == "123456":
+            def mostrar_login()
+            page.clean()
+            page.add(ft.Text("Bienvenido")) 
+            page.add(ft.ElevateButton("Cerrar sesion", on_click=main))
         else:
-            resultado.value = "Usuario o contraseña incorrectos"
-            resultado.color = "red"
-            page1.update()
+            page.add(ft.Text("Usuario o contraseña Incorrecta"))
+            page.add(ft.Text("Intente de nuevo"))
+            page.update()
             
-    # Botón de inicio de sesión
-    btn_iniciar_sesion = ft.ElevatedButton(
-        text="Iniciar sesión",
-        on_click=iniciar_sesion
-    )
+            page.add(
+                ft.Text("iniciar sesion", size=30),
+                admin,
+                password,
+                ft.ElevatedButton("Ingresar", on_click=login)
+            )
+        ft.app(target=main)
 
+def main(page: ft.Page):
     # Título de la ventana
-    page1.title = "CRUD Usuarios MySQL"
+    page.title = "CRUD Usuarios MySQL"
 
     # Color de fondo de la ventana
-    page1.bgcolor = ft.Colors.LIME_100
+    page.bgcolor = ft.Colors.LIME_100
 
     # Centrar contenido horizontalmente
-    page1.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
     # Centrar contenido verticalmente
-    page1.vertical_alignment = ft.MainAxisAlignment.CENTER
+    page.vertical_alignment = ft.MainAxisAlignment.CENTER
 
     # CONEXIÓN A MYSQL
     # *******************************************
@@ -195,7 +184,7 @@ def main(page1: ft.Page):
         nombre.focus()
 
         # Actualizar ventana
-        page1.update()
+        page.update()
 
 
     # FUNCIÓN CONSULTAR
@@ -237,8 +226,8 @@ def main(page1: ft.Page):
                 resultado.value = f"Registro seleccionado ID: {id_}"
                 resultado.color = "blue"
 
-                page1.update()
-
+                page.update()
+                
             # Agregar registro visual
             lista_datos.content.controls.append(
 
@@ -255,7 +244,7 @@ def main(page1: ft.Page):
             )
 
         # Actualizar interfaz
-        page1.update()
+        page.update()
 
     # FUNCIÓN GUARDAR
     # *******************************************
@@ -268,7 +257,7 @@ def main(page1: ft.Page):
             resultado.value = "⚠️ Campos obligatorios"
             resultado.color = "red"
 
-            page1.update()
+            page.update()
             return
 
         # Validar edad numérica
@@ -280,7 +269,7 @@ def main(page1: ft.Page):
             edad.value = ""
             edad.focus()
 
-            page1.update()
+            page.update()
             return
 
         # Consulta INSERT
@@ -317,7 +306,7 @@ def main(page1: ft.Page):
         # Actualizar lista
         consultar(None)
 
-        page2.update()
+        page.update()
 
     # FUNCIÓN ACTUALIZAR
     # *******************************************
@@ -330,7 +319,7 @@ def main(page1: ft.Page):
             resultado.value = "⚠️ Selecciona un registro"
             resultado.color = "red"
 
-            page2.update()
+            page.update()
             return
 
         # Consulta UPDATE
@@ -369,7 +358,7 @@ def main(page1: ft.Page):
         # Actualizar lista
         consultar(None)
 
-        page2.update()
+        page.update()
 
     # FUNCIÓN ELIMINAR
     # *******************************************
@@ -382,7 +371,7 @@ def main(page1: ft.Page):
             resultado.value = "⚠️ Selecciona un registro"
             resultado.color = "red"
 
-            page2.update()
+            page.update()
             return
 
         # Consulta DELETE
@@ -416,7 +405,7 @@ def main(page1: ft.Page):
             resultado.value = "⚠️ Registro no encontrado"
             resultado.color = "orange"
 
-        page2.update()
+        page.update()
 
     # FUNCIÓN SALIR
     # *******************************************
@@ -504,7 +493,7 @@ def main(page1: ft.Page):
     # INTERFAZ PRINCIPAL (FORMULARIO)
     # *******************************************
 
-    page2.add(
+    page.add(
         ft.Container(
             content=ft.Column(
                 [
