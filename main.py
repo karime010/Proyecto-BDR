@@ -1,543 +1,193 @@
-# Librería Flet para crear interfaces gráficas
 import flet as ft
-
-# Librería para conectar Python con MySQL
 import mysql.connector
+import bcrypt
+import os
 
-# Librería para funciones del sistema
-import sys
+
+# =========================
+# CONEXIÓN MYSQL
+# =========================
+conn = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="",
+    database="escuela"
+)
+cursor = conn.cursor()
 
 
-# FUNCIÓN PRINCIPAL
-# *******************************************
-
-# page representa la ventana principal de la app
+# =========================
+# APP PRINCIPAL
+# =========================
 def main(page: ft.Page):
-    page.title = "Login"
-    admin = ft.TextField(label="Usuario", width=200)
-    password = ft.TextField(label="contraseña", width=200, password=True, required=True)
-    
+
+    page.title = "Sistema CRUD Alumnos"
+    page.bgcolor = ft.Colors.BLUE_GREY_50
+
+    # =========================
+    # VARIABLES
+    # =========================
+    login_user = ft.TextField(label="Usuario")
+    login_pass = ft.TextField(label="Contraseña", password=True)
+
+    matricula = ft.TextField(label="Matrícula")
+    ap_pat = ft.TextField(label="Apellido Paterno")
+    ap_mat = ft.TextField(label="Apellido Materno")
+    nombres = ft.TextField(label="Nombres")
+    curp = ft.TextField(label="CURP")
+    especialidad = ft.TextField(label="Especialidad")
+    telefono = ft.TextField(label="Teléfono")
+    ciudad = ft.TextField(label="Ciudad")
+    estado = ft.TextField(label="Estado")
+    disciplinas = ft.TextField(label="Disciplinas")
+
+    foto_path = ft.Text("Sin foto")
+
+    mensaje = ft.Text()
+
+    # =========================
+    # LOGIN
+    # =========================
     def login(e):
-        if admin.value == "admin" and password.value == "123456":
-            def mostrar_login()
-            page.clean()
-            page.add(ft.Text("Bienvenido")) 
-            page.add(ft.ElevateButton("Cerrar sesion", on_click=main))
-        else:
-            page.add(ft.Text("Usuario o contraseña Incorrecta"))
-            page.add(ft.Text("Intente de nuevo"))
+        cursor.execute("SELECT password FROM usuarios WHERE usuario=%s", (login_user.value,))
+        user = cursor.fetchone()
+
+        if not user:
+            mensaje.value = "Usuario no existe"
             page.update()
-            
-            page.add(
-                ft.Text("iniciar sesion", size=30),
-                admin,
-                password,
-                ft.ElevatedButton("Ingresar", on_click=login)
-            )
-        ft.app(target=main)
+            return
 
-def main(page: ft.Page):
-    # Título de la ventana
-    page.title = "CRUD Usuarios MySQL"
+        if bcrypt.checkpw(login_pass.value.encode(), user[0].encode()):
+            page.clean()
+            page.add(crud_view())
+        else:
+            mensaje.value = "Contraseña incorrecta"
+            page.update()
 
-    # Color de fondo de la ventana
-    page.bgcolor = ft.Colors.LIME_100
+    # =========================
+    # REGISTRAR ALUMNO
+    # =========================
+    def guardar(e):
+        if not matricula.value:
+            mensaje.value = "Matrícula obligatoria"
+            page.update()
+            return
 
-    # Centrar contenido horizontalmente
-    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        sql = """
+        INSERT INTO alumnos VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """
 
-    # Centrar contenido verticalmente
-    page.vertical_alignment = ft.MainAxisAlignment.CENTER
-
-    # CONEXIÓN A MYSQL
-    # *******************************************
-
-    try:
-
-        # Conexión inicial al servidor MySQL
-        # SIN indicar todavía la base de datos
-        conn = mysql.connector.connect(
-
-            host="localhost",   # Servidor Local MySQL
-            user="root",        # Usuario MySQL
-            password=""    # Contraseña MySQL
+        values = (
+            matricula.value,
+            ap_pat.value,
+            ap_mat.value,
+            nombres.value,
+            curp.value.upper(),
+            especialidad.value,
+            telefono.value,
+            ciudad.value,
+            estado.value,
+            disciplinas.value,
+            foto_path.value
         )
 
-        # cursor permite enviar instrucciones SQL
-        cursor = conn.cursor()
-
-        # Crear la base de datos si no existe
-        cursor.execute(
-            "CREATE DATABASE IF NOT EXISTS crud_flet"
-        )
-
-        # Seleccionar la base de datos
-        cursor.execute(
-            "USE crud_flet"
-        )
-
-        # Crear tabla si no existe
-        cursor.execute("""
-
-            CREATE TABLE IF NOT EXISTS usuarios2 (
-
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                nombre VARCHAR(100),
-                correo VARCHAR(100),
-                edad INT
-
-            )
-
-        """)
-
-        # Guardar cambios en MySQL
+        cursor.execute(sql, values)
         conn.commit()
 
-        # Mensaje de conexión exitosa
-        print("✅ Conexión exitosa a MySQL")
-
-    # Captura errores de conexión
-    except Exception as e:
-
-        print("❌ Error de conexión")
-        print(e)
-
-        # Finaliza la función
-        return
-
-    # CONSTRUCCION DE LOS CAMPOS DE TEXTO
-    # *******************************************
-
-    # Campo ID
-    id_usuario = ft.TextField(
-
-        label="ID",
-        width=250,
-
-        # Solo lectura
-        read_only=True,
-
-        label_style=ft.TextStyle(color=ft.Colors.GREY_400)
-    )
-
-    # Campo Nombre
-    nombre = ft.TextField(
-        label="Nombre",
-        # Cursor automático
-        autofocus=True,
-        width=250,
-        label_style=ft.TextStyle(color=ft.Colors.GREY_400)
-    )
-
-    # Campo Correo
-    correo = ft.TextField(label="Correo",width=250,label_style=ft.TextStyle(color=ft.Colors.GREY_400))
-
-    # Campo Edad
-    edad = ft.TextField(label="Edad", width=250,  label_style=ft.TextStyle(color=ft.Colors.GREY_400))
-
-    # Texto para mensajes
-    resultado = ft.Text()
-
-    # CONTENEDOR PARA REGISTROS
-    # *******************************************
-
-    lista_datos = ft.Container(
-
-        # Dentro habrá una columna
-        content=ft.Column(
-
-            # Activar scroll automático
-            scroll=ft.ScrollMode.AUTO
-        ),
-
-        # Alto
-        height=180,
-
-        # Ancho
-        width=350,
-
-        # Fondo blanco
-        bgcolor=ft.Colors.WHITE,
-
-        # Bordes redondeados
-        border_radius=10,
-
-        # Espacio interno
-        padding=5
-    )
-
-    # FUNCIÓN LIMPIAR
-    # *******************************************
-
-    def limpiar(e):
-
-        # Limpiar campos
-        id_usuario.value = ""
-        nombre.value = ""
-        correo.value = ""
-        edad.value = ""
-
-        # Limpiar mensajes
-        resultado.value = ""
-
-        # Colocar cursor en nombre
-        nombre.focus()
-
-        # Actualizar ventana
+        mensaje.value = "Alumno guardado"
         page.update()
+        consultar(None)
 
-
-    # FUNCIÓN CONSULTAR
-    # *******************************************
-
+    # =========================
+    # CONSULTAR
+    # =========================
     def consultar(e):
+        lista.controls.clear()
 
-        # Limpiar lista visual
-        lista_datos.content.controls.clear()
-
-        # Ejecutar consulta SQL
-        cursor.execute(
-
-            "SELECT id, nombre, correo, edad FROM usuarios2"
-        )
-
-        # Obtener registros
-        registros = cursor.fetchall()
-
-        # Recorrer registros
-        for id_, nom, cor, ed in registros:
-
-            # Función para seleccionar registros
-            def seleccionar(
-                e,
-                id_=id_,
-                nom=nom,
-                cor=cor,
-                ed=ed
-            ):
-
-                # Cargar datos en formulario
-                id_usuario.value = str(id_)
-                nombre.value = nom
-                correo.value = cor
-                edad.value = str(ed)
-
-                # Mensaje
-                resultado.value = f"Registro seleccionado ID: {id_}"
-                resultado.color = "blue"
-
-                page.update()
-                
-            # Agregar registro visual
-            lista_datos.content.controls.append(
-
+        cursor.execute("SELECT matricula, nombres, ap_paterno FROM alumnos")
+        for m, n, ap in cursor.fetchall():
+            lista.controls.append(
                 ft.ListTile(
-
-                    title=ft.Text(
-                        f"{nom} ({ed})"
-                    ),
-
-                    subtitle=ft.Text(cor),
-
-                    on_click=seleccionar
+                    title=ft.Text(m),
+                    subtitle=ft.Text(f"{n} {ap}")
                 )
             )
-
-        # Actualizar interfaz
         page.update()
 
-    # FUNCIÓN GUARDAR
-    # *******************************************
-
-    def guardar(e):
-
-        # Validar campos vacíos
-        if not nombre.value or not correo.value or not edad.value:
-
-            resultado.value = "⚠️ Campos obligatorios"
-            resultado.color = "red"
-
-            page.update()
-            return
-
-        # Validar edad numérica
-        if not edad.value.isdigit():
-
-            resultado.value = "⚠️ Edad inválida"
-            resultado.color = "red"
-
-            edad.value = ""
-            edad.focus()
-
-            page.update()
-            return
-
-        # Consulta INSERT
-        sql = """
-
-            INSERT INTO usuarios2
-            (nombre, correo, edad)
-
-            VALUES (%s, %s, %s)
-
-        """
-
-        # Valores a insertar
-        valores = (
-
-            nombre.value,
-            correo.value,
-            edad.value
-        )
-
-        # Ejecutar consulta
-        cursor.execute(sql, valores)
-
-        # Guardar cambios
-        conn.commit()
-
-        # Mensaje éxito
-        resultado.value = "✅ Registro guardado"
-        resultado.color = "green"
-
-        # Limpiar formulario
-        limpiar(None)
-
-        # Actualizar lista
-        consultar(None)
-
-        page.update()
-
-    # FUNCIÓN ACTUALIZAR
-    # *******************************************
-
-    def actualizar(e):
-
-        # Validar selección
-        if not id_usuario.value:
-
-            resultado.value = "⚠️ Selecciona un registro"
-            resultado.color = "red"
-
-            page.update()
-            return
-
-        # Consulta UPDATE
-        sql = """
-
-            UPDATE usuarios2
-
-            SET
-                nombre=%s,
-                correo=%s,
-                edad=%s
-
-            WHERE id=%s
-
-        """
-        
-        # Valores actualización
-        valores = (
-
-            nombre.value,
-            correo.value,
-            edad.value,
-            id_usuario.value
-        )
-
-        # Ejecutar actualización
-        cursor.execute(sql, valores)
-
-        # Guardar cambios
-        conn.commit()
-
-        # Mensaje
-        resultado.value = "✏️ Registro actualizado"
-        resultado.color = "blue"
-
-        # Actualizar lista
-        consultar(None)
-
-        page.update()
-
-    # FUNCIÓN ELIMINAR
-    # *******************************************
-
+    # =========================
+    # ELIMINAR
+    # =========================
     def eliminar(e):
-
-        # Validar selección
-        if not id_usuario.value:
-
-            resultado.value = "⚠️ Selecciona un registro"
-            resultado.color = "red"
-
-            page.update()
-            return
-
-        # Consulta DELETE
-        sql = """
-
-            DELETE FROM usuarios2
-            WHERE id=%s
-
-        """
-
-        # Valor ID
-        valores = (id_usuario.value,)
-
-        # Ejecutar eliminación
-        cursor.execute(sql, valores)
-
-        # Guardar cambios
+        cursor.execute("DELETE FROM alumnos WHERE matricula=%s", (matricula.value,))
         conn.commit()
-
-        # Verificar eliminación
-        if cursor.rowcount > 0:
-
-            resultado.value = "🗑️ Registro eliminado"
-            resultado.color = "red"
-
-            limpiar(None)
-            consultar(None)
-
-        else:
-
-            resultado.value = "⚠️ Registro no encontrado"
-            resultado.color = "orange"
-
+        mensaje.value = "Eliminado"
         page.update()
+        consultar(None)
 
-    # FUNCIÓN SALIR
-    # *******************************************
+    # =========================
+    # SUBIR FOTO (SIMPLIFICADO)
+    # =========================
+    def subir_foto(e):
+        if e.files:
+            file = e.files[0]
+            ruta = f"uploads/{file.name}"
+            os.makedirs("uploads", exist_ok=True)
+            with open(ruta, "wb") as f:
+                f.write(file.read())
+            foto_path.value = ruta
+            page.update()
 
-    def salir(e):
+    file_picker = ft.FilePicker(on_result=subir_foto)
+    page.overlay.append(file_picker)
 
-        # Cerrar cursor
-        cursor.close()
+    # =========================
+    # LISTA
+    # =========================
+    lista = ft.Column(scroll=ft.ScrollMode.AUTO)
 
-        # Cerrar conexión MySQL
-        conn.close()
+    # =========================
+    # VISTA CRUD
+    # =========================
+    def crud_view():
+        return ft.Column([
+            ft.Text("CRUD ALUMNOS", size=25, weight="bold"),
 
-        # Cerrar aplicación
-        sys.exit()
+            matricula,
+            ap_pat,
+            ap_mat,
+            nombres,
+            curp,
+            especialidad,
+            telefono,
+            ciudad,
+            estado,
+            disciplinas,
 
+            ft.ElevatedButton("Subir foto", on_click=lambda _: file_picker.pick_files()),
+            foto_path,
 
-    # CONTRUCCION DE BOTONES
-    # *******************************************
+            ft.Row([
+                ft.ElevatedButton("Guardar", on_click=guardar),
+                ft.ElevatedButton("Consultar", on_click=consultar),
+                ft.ElevatedButton("Eliminar", on_click=eliminar),
+            ]),
 
-    btn_guardar = ft.ElevatedButton(
+            mensaje,
+            lista
+        ])
 
-        "Guardar",
-        on_click=guardar,
-        width=100
-    )
-
-    btn_consultar = ft.ElevatedButton(
-
-        "Consultar",
-        on_click=consultar,
-        width=110
-    )
-
-    btn_actualizar = ft.ElevatedButton(
-
-        "Actualizar",
-        on_click=actualizar,
-        width=115
-    )
-
-    btn_eliminar = ft.ElevatedButton(
-
-        "Eliminar",
-        on_click=eliminar,
-        width=105
-    )
-
-    btn_limpiar = ft.ElevatedButton(
-
-        "Limpiar",
-        on_click=limpiar,
-        width=100
-    )
-
-    btn_salir = ft.ElevatedButton(
-
-        "Salir",
-        on_click=salir,
-        width=100,
-
-        bgcolor="red",
-        color="white"
-    )
-
-    # FILAS PARA LA UBICACION DEL MENU DE BOTONES
-    # *******************************************
-
-    fila1 = ft.Row(
-        [
-            btn_guardar,
-            btn_consultar,
-            btn_actualizar
-        ],
-        alignment=ft.MainAxisAlignment.CENTER #Centrado de Botones de la Fila1
-    )
-    fila2 = ft.Row(
-        [
-            btn_eliminar,
-            btn_limpiar,
-            btn_salir
-        ],
-        alignment=ft.MainAxisAlignment.CENTER # Centrado de Botones de la fila2
-    )
-
-    # INTERFAZ PRINCIPAL (FORMULARIO)
-    # *******************************************
-
+    # =========================
+    # LOGIN UI
+    # =========================
     page.add(
-        ft.Container(
-            content=ft.Column(
-                [
-                    # Título del Formulario
-                    ft.Text(
-                        "CRUD USUARIOS MYSQL",
-                        size=22,
-                        weight="bold",
-                        color="black"
-                    ),
-
-                    # Campos a capturar
-                    id_usuario,
-                    nombre,
-                    correo,
-                    edad,
-
-                    # Botones de opciones
-                    fila1,
-                    fila2,
-
-                    # Mensajes de resultados
-                    resultado,
-
-                    # Lista con registros
-                    lista_datos
-                ],
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=10
-            ),
-            width=420,
-            padding=20,
-            bgcolor=ft.Colors.GREY_100,
-            border_radius=15
-        )
+        ft.Column([
+            ft.Text("LOGIN", size=30),
+            login_user,
+            login_pass,
+            ft.ElevatedButton("Entrar", on_click=login),
+            mensaje
+        ])
     )
 
-    # CONSULTAR AL INICIAR
-    # *******************************************
 
-    consultar(None)
-
-
-# EJECUTAR APLICACIÓN
-# *******************************************
-
-ft.run(main)
+ft.app(target=main)
